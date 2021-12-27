@@ -2,7 +2,7 @@ import GameBoard from './GameBoard';
 import Levels from './Levels';
 
 var pixiApp = new PIXI.Application({ width: 480, height: 480 });
-document.body.appendChild(pixiApp.view);
+GameContainer.appendChild(pixiApp.view);
 
 let currentLevelNumber = 1;
 let currentLevelConfig = Levels['' + currentLevelNumber];

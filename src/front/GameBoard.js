@@ -36,6 +36,13 @@ class GameBoard extends PIXI.Container {
     this.setLevel(finalConfig);
   }
 
+  /**
+   * Set level configuration.
+   * 
+   * @param {object} levelConfig level configuration.
+   * @param {number} levelConfig.numberOfWinningSpaces number of winning spaces.
+   * @param {number} levelConfig.numberOfHoles number of holes.
+   */
   setLevel(levelConfig) {
     // TODO check that holes don't block winning spaces
     this.#winningSpaces = [];
@@ -51,10 +58,24 @@ class GameBoard extends PIXI.Container {
     }
   }
 
+  /**
+   * Gets a random integer number between 0 and maxValue.
+   * 
+   * @param {number} maxValue max value of the integer
+   * @returns a random integer number.
+   */
   static #getRandomInt(maxValue) {
     return Math.floor(Math.random() * maxValue);
   }
 
+  /**
+   * Gets a random position.
+   * 
+   * @param {number[]} notIn the position does not have to be in
+   * the provided positions.
+   * @returns {object} a random position. Object to be returned has
+   * 'row' and 'col' properties.
+   */
   static #generateRandomPosition(notIn = []) {
 
     let position = {};
@@ -66,14 +87,34 @@ class GameBoard extends PIXI.Container {
     return position;
   }
 
+  /**
+   * Generates a random column value.
+   * 
+   * @returns {number} the column value.
+   */
   static #generateRandomCol() {
     return GameBoard.#getRandomInt(GameBoard.#MAX_COLS - 1);
   }
 
+  /**
+   * Generates a random row value.
+   * 
+   * @returns {number} the row value.
+   */
   static #generateRandomRow() {
     return GameBoard.#getRandomInt(GameBoard.#MAX_ROWS - 1);
   }
 
+  /**
+   * Verifies if the position is included in any of the positions arrays.
+   * 
+   * @param {object[]} arrayOfPositions arrays of position where to check.
+   * @param {object} positionToSearch position to check if exists in the array of positions.
+   * @param {number} positionToSearch.row row of the position.
+   * @param {number} positionToSearch.col column of the position.
+   * @returns true if the position is included in any of the array of positions, false
+   * otherwise.
+   */
   static positionIsIncludedInArray(arrayOfPositions, positionToSearch) {
     return arrayOfPositions.findIndex(el => el.col === positionToSearch.col && el.row === positionToSearch.row) !== -1;
   }
@@ -82,18 +123,24 @@ class GameBoard extends PIXI.Container {
     super.render(renderer);
     this.#container.clear();
 
+    // We draw game board squares: available positions, holes and winning spaces
     for (let rowIndex = 0; rowIndex < GameBoard.#MAX_ROWS; rowIndex ++) {
       for (let colIndex = 0; colIndex < GameBoard.#MAX_COLS; colIndex++) {
+
+        // default color: available space
         this.#container.beginFill(0xff0000);
     
+        // if the current position is a hole, draw a black square
         if (this.#holes.findIndex(el => el.col === colIndex && el.row === rowIndex) !== -1) {
           this.#container.beginFill(0x000000);
         }
     
+        // if the current position is a winning position, draw a white square
         if (this.#winningSpaces.findIndex(el => el.col === colIndex && el.row === rowIndex) !== -1) {
           this.#container.beginFill(0xffffff);
         }
     
+        // draw the rectangle
         this.#container.drawRect(
           GameBoard.#PADDING + GameBoard.#BLOCK_TOTAL_SIZE * colIndex,
           GameBoard.#PADDING + GameBoard.#BLOCK_TOTAL_SIZE * rowIndex,
@@ -103,6 +150,7 @@ class GameBoard extends PIXI.Container {
       }
     }
 
+    // draw the player
     this.#container.beginFill(0x4fd845);
     this.#container.drawRect(
       GameBoard.#PLAYER_PADDING + GameBoard.#BLOCK_TOTAL_SIZE * this.#playerPosition.col,
@@ -114,14 +162,33 @@ class GameBoard extends PIXI.Container {
     this.#container.endFill();
   }
 
+  /**
+   * Verifies if the player won the game.
+   * 
+   * @returns true if the player reached a winning space, false otherwise.
+   */
   #checkIsWin() {
     return this.#winningSpaces.findIndex(el => el.col === this.#playerPosition.col && el.row === this.#playerPosition.row) !== -1;
   }
 
+  /**
+   * Verifies if there is a hole in the given position.
+   * 
+   * @param {object} position position to check for a hole.
+   * @param {number} position.row row to check.
+   * @param {number} position.col col to check.
+   * @returns true if in the position there is a hole, false otherwise.
+   */
   #isHole(position) {
     return this.#holes.findIndex(el => el.col === position.col && el.row === position.row) !== -1;
   }
 
+  /**
+   * Checks if the player can move to the given position.
+   * 
+   * @param {object} nextPosition position where to check.
+   * @returns true if the player can move, false otherwise.
+   */
   #canMoveToPosition(nextPosition) {
     return nextPosition.col >= 0 &&
           nextPosition.col < GameBoard.#MAX_COLS &&
@@ -130,6 +197,12 @@ class GameBoard extends PIXI.Container {
           !this.#isHole(nextPosition);
   }
 
+  /**
+   * Moves the player by the given amount.
+   * 
+   * @param {number} [colAmount=0] number of columns to move.
+   * @param {number} [rowAmount=0] number of rows to move.
+   */
   #move(colAmount = 0, rowAmount = 0) {
 
     if (this.#checkIsWin()) {
@@ -150,22 +223,40 @@ class GameBoard extends PIXI.Container {
     }
   }
 
+  /**
+   * Moves the player one position to the left.
+   */
   moveLeft() {
     this.#move(-1);
   }
 
+  /**
+   * Moves the player one position to the right.
+   */
   moveRight() {
     this.#move(1);
   }
 
+  /**
+   * Moves the player one position up.
+   */
   moveUp() {
     this.#move(0, -1);
   }
 
+  /**
+   * Moves the player one position down.
+   */
   moveDown() {
     this.#move(0, 1);
   }
 
+  /**
+   * Subscribe to the 'win' event.
+   * 
+   * @param {function} cb callback to invoke when the
+   * player wins.
+   */
   onwin(cb) {
     this.#eventEmitter.on('win', cb);
   }

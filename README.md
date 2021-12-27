@@ -43,4 +43,5 @@ The game is played your voice. The first time you play the game, the browser wil
 - Add some UI to the level screen.
 - Give feedback to the player when a level is completed.
 - Give feedback to the player when he/she loses.
-- Show a transicion when the player is moving.
+- Show a transition when the player is moving.
+- Level difficulty: grow size of the board.
