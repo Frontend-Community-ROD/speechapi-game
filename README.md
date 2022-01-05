@@ -12,7 +12,7 @@ This is a game that uses the SpeechAPI from browsers. You have to check if the b
 
 - Clone this repository.
 - Install dependencies with `npm install`
-- Run the game with `npm run`
+- Run the game with `npm start`
 - Open the game in your browser in `https://localhost:3000`
 
 Pay attention in the URL of the game, it is `https` and not `http`. The command `npm run` will create a secure server in your local machine and deploy the game inside of that server. Every change will make the code to be compiled and deployed again.
