@@ -29,7 +29,7 @@ Certificates of the secure server are located int the `cert` folder.
 
 ### Commands
 
-The game is played your voice. The first time you play the game, the browser will ask you for permission in using your microphone. This commands will be recognized by the game:
+The game is played with your voice. The first time you play the game, the browser will ask you for permission in using the microphone. This commands will be recognized by the game:
 
 - izquierda: move the player to the left.
 - derecha: move tha player to the right.
@@ -44,4 +44,4 @@ The game is played your voice. The first time you play the game, the browser wil
 - Give feedback to the player when a level is completed.
 - Give feedback to the player when he/she loses.
 - Show a transition when the player is moving.
-- Level difficulty: grow size of the board.
+- Add tests.

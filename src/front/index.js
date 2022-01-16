@@ -1,13 +1,18 @@
 import GameBoard from './GameBoard';
 import Levels from './Levels';
 
-var pixiApp = new PIXI.Application({ width: 480, height: 480 });
+const width = 800;
+const height = 600;
+const gameBoardSize = { width, height };
+var pixiApp = new PIXI.Application(gameBoardSize);
 GameContainer.appendChild(pixiApp.view);
+
+
 
 let currentLevelNumber = 1;
 let currentLevelConfig = Levels['' + currentLevelNumber];
 
-const gameBoardInstance = new GameBoard(currentLevelConfig);
+const gameBoardInstance = new GameBoard(gameBoardSize, currentLevelConfig);
 gameBoardInstance.onwin(() => {
   currentLevelNumber++;
   currentLevelConfig = Levels['' + currentLevelNumber];
@@ -15,7 +20,6 @@ gameBoardInstance.onwin(() => {
 });
 
 pixiApp.stage.addChild(gameBoardInstance);
-
 
 
 var SpeechRecognition = SpeechRecognition || webkitSpeechRecognition

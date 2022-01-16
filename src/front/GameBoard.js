@@ -1,8 +1,10 @@
 import { EventEmitter } from "eventemitter3";
 
-const defaultConfig = {
+const defaultLevelConfig = {
   numberOfWinningSpaces: 1,
-  numberOfHoles: 0
+  numberOfHoles: 0,
+  maxNumberOfCols: 4,
+  maxNumberOfRows: 4
 };
 
 const maxNumberOfWinningSpaces = 3;
@@ -15,25 +17,47 @@ class GameBoard extends PIXI.Container {
   #winningSpaces = [];
   #holes = [];
   #eventEmitter = new EventEmitter();
+  #levelConfig = defaultLevelConfig;
+
+  /**
+   * @private
+   * @description current game board size
+   */
+  #gameBoardSize;
+  #blockWidth;
+  #blockHeight;
 
   static #PADDING = 5;
   static #PLAYER_PADDING = GameBoard.#PADDING + 10;
-  static #MAX_ROWS = 4;
-  static #MAX_COLS = 4;
-  static #BLOCK_TOTAL_SIZE = 120;
+  static #DEFAULT_MAX_ROWS = defaultLevelConfig.maxNumberOfRows;
+  static #DEFAULT_MAX_COLS = defaultLevelConfig.maxNumberOfCols;
 
-  constructor(config = defaultConfig) {
+  /**
+   * @description Creates a new GameBoard.
+   * 
+   * @param {object} canvasSize size of the canvas where the gameboard is going to be rendered.
+   * @param {number} size.width total width of the canvas.
+   * @param {number} size.height total height of the canvas.
+   * @param {object} [initialLevelConfig=defaultLevelConfig] initial level configuration.
+   * @param {number} [numberOfWinningSpaces=defaultLevelConfig.numberOfWinningSpaces] number of winning spaces
+   * to be displayed.
+   * @param {number} [numberOfHoles=defaultLevelConfig.numberOfHoles] number of holes to be displayed.
+   * @param {number} [maxNumberOfCols=defaultLevelConfig.maxNumberOfCols] maximum number of columns to be displayed.
+   * @param {number} [maxNumberOfRows=defaultLevelConfig.maxNumberOfRows] maximum number of rows to be displayed.
+   */
+  constructor(canvasSize, initialLevelConfig = defaultLevelConfig) {
     super();
 
-    const finalConfig = {
-      ...defaultConfig,
-      ...config
+    this.#gameBoardSize = canvasSize;
+    const finalLevelConfig = {
+      ...defaultLevelConfig,
+      ...initialLevelConfig
     };
 
     this.#container = new PIXI.Graphics();
     this.addChild(this.#container);
 
-    this.setLevel(finalConfig);
+    this.setLevel(finalLevelConfig);
   }
 
   /**
@@ -42,20 +66,27 @@ class GameBoard extends PIXI.Container {
    * @param {object} levelConfig level configuration.
    * @param {number} levelConfig.numberOfWinningSpaces number of winning spaces.
    * @param {number} levelConfig.numberOfHoles number of holes.
+   * @param {number} levelConfig.maxNumberOfCols maximum number of columns to use.
+   * @param {number} levelConfig.maxNumberOfRows maximum number of rows to use.
    */
   setLevel(levelConfig) {
     // TODO check that holes don't block winning spaces
+    this.#blockWidth = this.#gameBoardSize.width / levelConfig.maxNumberOfCols;
+    this.#blockHeight = this.#gameBoardSize.height / levelConfig.maxNumberOfRows;
+    this.#levelConfig = levelConfig;
     this.#winningSpaces = [];
     this.#holes = [];
-    this.#playerPosition = GameBoard.#generateRandomPosition();
-
+    this.#playerPosition = GameBoard.#generateRandomPosition([], levelConfig);
+    
     for (let i = 0; i < levelConfig.numberOfWinningSpaces && i < maxNumberOfWinningSpaces; i++) {
-      this.#winningSpaces = this.#winningSpaces.concat(GameBoard.#generateRandomPosition([...this.#winningSpaces, ...this.#holes, this.#playerPosition]))
+      this.#winningSpaces = this.#winningSpaces.concat(GameBoard.#generateRandomPosition([...this.#winningSpaces, ...this.#holes, this.#playerPosition], levelConfig))
     }
-
+    
     for (let i = 0; i < levelConfig.numberOfHoles && i < maxNumberOfHoles; i++) {
-      this.#holes = this.#holes.concat(GameBoard.#generateRandomPosition([...this.#winningSpaces, ...this.#holes, this.#playerPosition]));
+      this.#holes = this.#holes.concat(GameBoard.#generateRandomPosition([...this.#winningSpaces, ...this.#holes, this.#playerPosition], levelConfig));
     }
+    
+    this.#eventEmitter.emit('levelConfig', levelConfig);
   }
 
   /**
@@ -76,14 +107,14 @@ class GameBoard extends PIXI.Container {
    * @returns {object} a random position. Object to be returned has
    * 'row' and 'col' properties.
    */
-  static #generateRandomPosition(notIn = []) {
-
+  static #generateRandomPosition(notIn = [], levelConfig) {
+    
     let position = {};
     do {
-      position = { col: GameBoard.#generateRandomCol(), row: GameBoard.#generateRandomRow() };
+      position = { col: GameBoard.#generateRandomCol(levelConfig.maxNumberOfRows), row: GameBoard.#generateRandomRow(levelConfig.maxNumberOfCols) };
 
     } while (GameBoard.positionIsIncludedInArray(notIn, position));
-
+    console.log('pos', position);
     return position;
   }
 
@@ -92,8 +123,8 @@ class GameBoard extends PIXI.Container {
    * 
    * @returns {number} the column value.
    */
-  static #generateRandomCol() {
-    return GameBoard.#getRandomInt(GameBoard.#MAX_COLS - 1);
+  static #generateRandomCol(maxNumberOfCols = GameBoard.#DEFAULT_MAX_COLS) {
+    return GameBoard.#getRandomInt(maxNumberOfCols - 1);
   }
 
   /**
@@ -101,8 +132,8 @@ class GameBoard extends PIXI.Container {
    * 
    * @returns {number} the row value.
    */
-  static #generateRandomRow() {
-    return GameBoard.#getRandomInt(GameBoard.#MAX_ROWS - 1);
+  static #generateRandomRow(maxNumberOfRows = GameBoard.#DEFAULT_MAX_ROWS) {
+    return GameBoard.#getRandomInt(maxNumberOfRows - 1);
   }
 
   /**
@@ -124,8 +155,8 @@ class GameBoard extends PIXI.Container {
     this.#container.clear();
 
     // We draw game board squares: available positions, holes and winning spaces
-    for (let rowIndex = 0; rowIndex < GameBoard.#MAX_ROWS; rowIndex ++) {
-      for (let colIndex = 0; colIndex < GameBoard.#MAX_COLS; colIndex++) {
+    for (let rowIndex = 0; rowIndex < this.#levelConfig.maxNumberOfRows; rowIndex ++) {
+      for (let colIndex = 0; colIndex < this.#levelConfig.maxNumberOfCols; colIndex++) {
 
         // default color: available space
         this.#container.beginFill(0xff0000);
@@ -142,10 +173,10 @@ class GameBoard extends PIXI.Container {
     
         // draw the rectangle
         this.#container.drawRect(
-          GameBoard.#PADDING + GameBoard.#BLOCK_TOTAL_SIZE * colIndex,
-          GameBoard.#PADDING + GameBoard.#BLOCK_TOTAL_SIZE * rowIndex,
-          GameBoard.#BLOCK_TOTAL_SIZE - GameBoard.#PADDING * 2,
-          GameBoard.#BLOCK_TOTAL_SIZE - GameBoard.#PADDING * 2
+          GameBoard.#PADDING + this.#blockWidth * colIndex,
+          GameBoard.#PADDING + this.#blockHeight * rowIndex,
+          this.#blockWidth - GameBoard.#PADDING * 2,
+          this.#blockHeight - GameBoard.#PADDING * 2
         );
       }
     }
@@ -153,10 +184,10 @@ class GameBoard extends PIXI.Container {
     // draw the player
     this.#container.beginFill(0x4fd845);
     this.#container.drawRect(
-      GameBoard.#PLAYER_PADDING + GameBoard.#BLOCK_TOTAL_SIZE * this.#playerPosition.col,
-      GameBoard.#PLAYER_PADDING + GameBoard.#BLOCK_TOTAL_SIZE * this.#playerPosition.row,
-      GameBoard.#BLOCK_TOTAL_SIZE - GameBoard.#PLAYER_PADDING * 2,
-      GameBoard.#BLOCK_TOTAL_SIZE - GameBoard.#PLAYER_PADDING * 2
+      GameBoard.#PLAYER_PADDING + this.#blockWidth * this.#playerPosition.col,
+      GameBoard.#PLAYER_PADDING + this.#blockHeight * this.#playerPosition.row,
+      this.#blockWidth - GameBoard.#PLAYER_PADDING * 2,
+      this.#blockHeight - GameBoard.#PLAYER_PADDING * 2
     );
 
     this.#container.endFill();
@@ -191,9 +222,9 @@ class GameBoard extends PIXI.Container {
    */
   #canMoveToPosition(nextPosition) {
     return nextPosition.col >= 0 &&
-          nextPosition.col < GameBoard.#MAX_COLS &&
+          nextPosition.col < this.#levelConfig.maxNumberOfCols &&
           nextPosition.row >= 0 &&
-          nextPosition.row < GameBoard.#MAX_ROWS &&
+          nextPosition.row < this.#levelConfig.maxNumberOfRows &&
           !this.#isHole(nextPosition);
   }
 
@@ -259,6 +290,17 @@ class GameBoard extends PIXI.Container {
    */
   onwin(cb) {
     this.#eventEmitter.on('win', cb);
+  }
+
+  /**
+   * Subscribe to the 'levelConfig' event. This event will be fired each
+   * time the level configuration changes.
+   * 
+   * @param {function} cb callback to invoke when the
+   * event fires.
+   */
+  onlevenConfigChange(cb) {
+    this.#eventEmitter.on('levelConfig', cb);
   }
 }
 
